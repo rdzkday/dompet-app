@@ -1,7 +1,35 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-<rect width="1024" height="1024" rx="230" fill="#1A1E2E"/>
-<g transform="translate(51.2 51.2) scale(.9)">
-<circle cx="420" cy="330" r="120" fill="#8FA2FF"/><circle cx="600" cy="300" r="120" fill="#F28DB5"/>
-<path d="M230 400h564v220a200 200 0 0 1-200 200H430a200 200 0 0 1-200-200z" fill="#F2B544"/>
-<path d="M300 470h424" stroke="#231A05" stroke-width="22" stroke-dasharray="46 30"/>
-</g></svg>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DCD6F8"/><stop offset="1" stop-color="#C3CDF4"/></linearGradient>
+  <clipPath id="body"><rect x="312" y="300" width="400" height="520" rx="58"/></clipPath>
+  <pattern id="weave" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1.6" fill="#fff" opacity=".07"/><circle cx="7.5" cy="7.5" r="1.6" fill="#fff" opacity=".07"/></pattern>
+</defs>
+<rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+<g transform="translate(-51.20 -51.20) scale(1.1)">
+  <ellipse cx="512" cy="858" rx="190" ry="20" fill="#2B2F55" opacity=".28"/>
+  <g>
+    <g>
+      <circle cx="436" cy="262" r="86" fill="#8FA2FF"/>
+      <circle cx="436" cy="262" r="58" fill="none" stroke="#7388EE" stroke-width="12"/>
+    </g>
+    <g>
+      <circle cx="598" cy="246" r="86" fill="#F28DB5"/>
+      <circle cx="598" cy="246" r="58" fill="none" stroke="#E071A0" stroke-width="12"/>
+    </g>
+    <g clip-path="url(#body)">
+      <rect x="312" y="300" width="400" height="270" fill="#25262E"/>
+      <rect x="312" y="300" width="400" height="270" fill="url(#weave)"/>
+      <rect x="312" y="300" width="22" height="270" fill="#34353F" opacity=".7"/>
+      <rect x="312" y="566" width="400" height="92" fill="#EFE7D4"/>
+      <rect x="312" y="566" width="400" height="92" fill="url(#weave)" opacity=".5"/>
+      <rect x="312" y="640" width="400" height="18" fill="#DCD2BA"/>
+      <rect x="312" y="654" width="400" height="170" fill="#2F3E75"/>
+      <rect x="312" y="654" width="400" height="170" fill="url(#weave)"/>
+      <rect x="312" y="654" width="22" height="170" fill="#3C4D8C" opacity=".8"/>
+    </g>
+    <rect x="334" y="322" width="356" height="476" rx="38" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="5" stroke-dasharray="20 16"/>
+    <rect x="560" y="716" width="104" height="58" rx="10" fill="#17181E"/>
+    <rect x="568" y="724" width="88" height="42" rx="6" fill="none" stroke="#EFE7D4" stroke-opacity=".5" stroke-width="3" stroke-dasharray="9 7"/>
+  </g>
+</g>
+</svg>

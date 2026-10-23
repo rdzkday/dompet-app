@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<style>
+  .float{animation:bob 3.2s ease-in-out infinite}
+  .coinA{animation:popA 3.2s ease-in-out infinite}
+  .coinB{animation:popB 3.2s ease-in-out infinite .35s}
+  .shadow{animation:sh 3.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+  .coinA,.coinB{transform-box:fill-box;transform-origin:center}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  @keyframes popA{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-46px) rotate(-8deg)}60%{transform:translateY(-46px) rotate(-8deg)}}
+  @keyframes popB{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-34px) rotate(10deg)}60%{transform:translateY(-34px) rotate(10deg)}}
+  @keyframes sh{0%,100%{transform:scaleX(1);opacity:.28}50%{transform:scaleX(.88);opacity:.16}}
+  @media (prefers-reduced-motion:reduce){.float,.coinA,.coinB,.shadow{animation:none}}
+</style>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#DCD6F8"/><stop offset="1" stop-color="#C3CDF4"/></linearGradient>
+  <clipPath id="body"><rect x="312" y="300" width="400" height="520" rx="58"/></clipPath>
+  <pattern id="weave" width="10" height="10" patternUnits="userSpaceOnUse"><circle cx="2.5" cy="2.5" r="1.6" fill="#fff" opacity=".07"/><circle cx="7.5" cy="7.5" r="1.6" fill="#fff" opacity=".07"/></pattern>
+</defs>
+<rect width="1024" height="1024" rx="230" fill="url(#bg)"/>
+<g transform="translate(-51.20 -51.20) scale(1.1)">
+  <ellipse class="shadow" cx="512" cy="858" rx="190" ry="20" fill="#2B2F55" opacity=".28"/>
+  <g class="float">
+    <g class="coinA">
+      <circle cx="436" cy="262" r="86" fill="#8FA2FF"/>
+      <circle cx="436" cy="262" r="58" fill="none" stroke="#7388EE" stroke-width="12"/>
+    </g>
+    <g class="coinB">
+      <circle cx="598" cy="246" r="86" fill="#F28DB5"/>
+      <circle cx="598" cy="246" r="58" fill="none" stroke="#E071A0" stroke-width="12"/>
+    </g>
+    <g clip-path="url(#body)">
+      <rect x="312" y="300" width="400" height="270" fill="#25262E"/>
+      <rect x="312" y="300" width="400" height="270" fill="url(#weave)"/>
+      <rect x="312" y="300" width="22" height="270" fill="#34353F" opacity=".7"/>
+      <rect x="312" y="566" width="400" height="92" fill="#EFE7D4"/>
+      <rect x="312" y="566" width="400" height="92" fill="url(#weave)" opacity=".5"/>
+      <rect x="312" y="640" width="400" height="18" fill="#DCD2BA"/>
+      <rect x="312" y="654" width="400" height="170" fill="#2F3E75"/>
+      <rect x="312" y="654" width="400" height="170" fill="url(#weave)"/>
+      <rect x="312" y="654" width="22" height="170" fill="#3C4D8C" opacity=".8"/>
+    </g>
+    <rect x="334" y="322" width="356" height="476" rx="38" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="5" stroke-dasharray="20 16"/>
+    <rect x="560" y="716" width="104" height="58" rx="10" fill="#17181E"/>
+    <rect x="568" y="724" width="88" height="42" rx="6" fill="none" stroke="#EFE7D4" stroke-opacity=".5" stroke-width="3" stroke-dasharray="9 7"/>
+  </g>
+</g>
+</svg>

@@ -280,7 +280,7 @@ textarea.input { padding: 12px 14px; min-height: 90px; resize: vertical; }
 
 /* ---------- connect ---------- */
 .connect { padding: calc(var(--safe-t) + 56px) 24px 40px; max-width: 420px; margin: 0 auto; }
-.connect .logo { width: 68px; height: 68px; border-radius: 22px; margin-bottom: 24px; }
+.connect .logo { width: 88px; height: 88px; border-radius: 28px; margin-bottom: 24px; }
 .connect h1 { font-size: 32px; font-weight: 900; margin: 0 0 8px; }
 .connect p { color: var(--text-2); margin: 0 0 24px; }
 .demo-bar { font-size: 12px; text-align: center; padding: 7px var(--gutter); background: var(--b-rt); color: var(--ink); font-weight: 700; }

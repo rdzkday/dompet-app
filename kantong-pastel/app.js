@@ -872,7 +872,7 @@
   // ================= connect =================
   function renderConnect() {
     var app = $('#app');
-    app.innerHTML = '<div class="connect"><img class="logo" src="icons/icon-192.png" alt=""><h1>Kantong</h1>' +
+    app.innerHTML = '<div class="connect"><img class="logo" src="icons/icon-animated.svg" alt=""><h1>Kantong</h1>' +
       '<p>Catatan keuangan pribadi dan rumah tangga. Tempel kode koneksi dari Google Sheets untuk mulai.</p>' +
       '<div class="field"><label for="code">Kode koneksi</label><textarea id="code" class="input" placeholder="Tempel kode dari menu Kantong di Google Sheets" autocomplete="off" spellcheck="false"></textarea></div>' +
       '<div class="err" id="c-err"></div><button class="btn" id="connect">Hubungkan</button>' +
