@@ -1,6 +1,6 @@
 // Kantong service worker: network-first untuk app shell (update selalu masuk saat online),
 // fallback ke cache saat offline. Request API (POST ke script.google.com) tidak disentuh.
-const CACHE = 'kantong-pastel-v2';
+const CACHE = 'kantong-pastel-v3';
 const SHELL = ['./', 'index.html', 'styles.css', 'core.js', 'app.js', 'manifest.webmanifest',
   'fonts/nunito.woff2', 'icons/icon.svg', 'icons/icon-animated.svg', 'icons/icon-32.png', 'icons/icon-192.png', 'icons/apple-touch-icon.png'];
 

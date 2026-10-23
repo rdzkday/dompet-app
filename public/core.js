@@ -13,11 +13,12 @@ var KantongCore = (function () {
     Kantong: ['id', 'nama', 'jenis', 'buku', 'saldo_awal', 'per_tanggal', 'limit', 'aktif', 'urutan'],
     Budget: ['id', 'bulan', 'buku', 'kategori', 'nominal'],
     Transaksi: ['id', 'tanggal', 'tipe', 'nominal', 'buku', 'kategori', 'kantong', 'kantong_tujuan',
-      'keterangan', 'reimburse', 'oleh', 'sumber', 'dibuat', 'diubah', 'dihapus']
+      'keterangan', 'reimburse', 'oleh', 'sumber', 'dibuat', 'diubah', 'dihapus', 'terbayar', 'tx_balik']
   };
+  var KAT_REIMBURSE = 'reimburse-masuk';   // kategori pemasukan otomatis, tidak dihitung sebagai pendapatan
   var TIPE_TX = ['Pengeluaran', 'Pemasukan', 'Transfer'];
   var JENIS_KANTONG = ['Cash', 'Debit', 'E-wallet', 'Kredit'];
-  var VERSION = '1.0.0';
+  var VERSION = '1.1.0';
 
   // ---------- util ----------
   function err(msg) { var e = new Error(msg); e.userFacing = true; return e; }
@@ -101,14 +102,16 @@ var KantongCore = (function () {
   function summarize(db, monthTx, budgets, bukuSel) {
     var inSet = function (b) { return bukuSel === 'all' || b === bukuSel; };
     var kmap = byId(db.Kategori);
-    var s = { pemasukan: 0, pengeluaran: 0, reimburse: 0, transferMasuk: 0, transferKeluar: 0,
+    var s = { pemasukan: 0, pengeluaran: 0, reimburse: 0, reimburseMenunggu: 0, transferMasuk: 0, transferKeluar: 0,
       budgetTotal: 0, perKategori: [], perMasuk: [] };
     var spend = {}, inc = {};
     monthTx.forEach(function (t) {
       if (t.dihapus) return;
       var n = num(t.nominal), k = kmap[t.kategori];
       if (t.tipe === 'Pengeluaran' && inSet(t.buku)) {
-        if (bool(t.reimburse)) { s.reimburse += n; return; }
+        // reimburse: tetap dihitung selama menunggu; keluar dari hitungan setelah terbayar
+        if (bool(t.reimburse) && t.terbayar) { s.reimburse += n; return; }
+        if (bool(t.reimburse)) s.reimburseMenunggu += n;
         if (k && !bool(k.hitung)) return;
         s.pengeluaran += n; spend[t.kategori] = (spend[t.kategori] || 0) + n;
       } else if (t.tipe === 'Pemasukan' && inSet(t.buku)) {
@@ -153,7 +156,10 @@ var KantongCore = (function () {
       kategori: String(input.kategori || ''), kantong: String(input.kantong || ''),
       kantong_tujuan: String(input.kantong_tujuan || ''),
       keterangan: String(input.keterangan || '').trim().slice(0, 200),
-      reimburse: bool(input.reimburse)
+      reimburse: bool(input.reimburse),
+      // status terbayar hanya diubah lewat aksi tx.reimburse, tidak bisa dari form biasa
+      terbayar: existing ? String(existing.terbayar || '') : '',
+      tx_balik: existing ? String(existing.tx_balik || '') : ''
     };
     if (!t.id || t.id.length > 64) throw err('ID transaksi tidak valid');
     if (TIPE_TX.indexOf(t.tipe) < 0) throw err('Tipe transaksi tidak valid');
@@ -170,7 +176,7 @@ var KantongCore = (function () {
       if (!dst) throw err('Pilih kantong tujuan');
       if (dst.id === src.id) throw err('Kantong asal dan tujuan sama');
       if (!bool(dst.aktif) && !keep('kantong_tujuan')) throw err('Kantong tujuan nonaktif');
-      t.buku = src.buku; t.kategori = ''; t.reimburse = false;
+      t.buku = src.buku; t.kategori = ''; t.reimburse = false; t.terbayar = ''; t.tx_balik = '';
     } else {
       t.kantong_tujuan = '';
       if (!byId(db.Buku)[t.buku]) throw err('Buku tidak valid');
@@ -179,11 +185,52 @@ var KantongCore = (function () {
       if (k.tipe !== t.tipe) throw err('Kategori tidak cocok dengan tipe transaksi');
       if (!bool(k.aktif) && !keep('kategori')) throw err('Kategori "' + k.nama + '" nonaktif');
       if (scopeOf(k).indexOf(t.buku) < 0 && !keep('kategori')) throw err('Kategori "' + k.nama + '" tidak tersedia di buku ini');
-      if (t.tipe === 'Pemasukan') t.reimburse = false;
+      if (t.tipe === 'Pemasukan') { t.reimburse = false; t.terbayar = ''; t.tx_balik = ''; }
     }
     if (!canWrite(db, user, t.buku)) throw err('Kamu hanya bisa melihat buku ini');
     return t;
   }
+
+  // ---------- utang antar buku (Rumah Tangga <-> pribadi) ----------
+  // Jumlah positif = buku bersama masih berutang ke pemilik buku pribadi.
+  //  + pengeluaran buku bersama yang dibayar pakai kantong pribadi
+  //  - transfer dari kantong buku bersama ke kantong pribadi (penggantian)
+  // Topup (transfer pribadi -> bersama) sengaja tidak dihitung: itu alokasi dana, bukan utang.
+  function computeUtang(db) {
+    var kmap = byId(db.Kantong), bmap = byId(db.Buku), acc = {};
+    function key(b, p) { return b + '|' + p; }
+    function add(b, p, n) { var k = key(b, p); acc[k] = (acc[k] || 0) + n; }
+    function pribadi(kid) { var k = kmap[kid]; var b = k ? bmap[k.buku] : null; return b && b.tipe === 'Pribadi' ? b : null; }
+    function bersama(kid) { var k = kmap[kid]; var b = k ? bmap[k.buku] : null; return b && b.tipe === 'Bersama' ? b : null; }
+    liveTx(db).forEach(function (t) {
+      var n = num(t.nominal), tb = bmap[t.buku];
+      if (t.tipe === 'Pengeluaran' && tb && tb.tipe === 'Bersama' && !bool(t.reimburse)) {
+        var p = pribadi(t.kantong); if (p) add(tb.id, p.id, n);
+      } else if (t.tipe === 'Pemasukan' && tb && tb.tipe === 'Bersama' && t.sumber !== 'auto') {
+        var p2 = pribadi(t.kantong); if (p2) add(tb.id, p2.id, -n);
+      } else if (t.tipe === 'Transfer') {
+        var from = bersama(t.kantong), to = pribadi(t.kantong_tujuan);
+        if (from && to) add(from.id, to.id, -n);
+      }
+    });
+    return Object.keys(acc).filter(function (k) { return acc[k] !== 0; }).map(function (k) {
+      var p = k.split('|');
+      return { dari: p[0], ke: p[1], jumlah: acc[k] };
+    });
+  }
+
+  function ensureKategoriReimburse(store, db) {
+    var ada = byId(db.Kategori)[KAT_REIMBURSE];
+    if (ada) return ada;
+    var kat = { id: KAT_REIMBURSE, nama: 'Reimburse masuk', tipe: 'Pemasukan',
+      buku: db.Buku.map(function (b) { return b.id; }).join(','), warna: '#9CA3AF',
+      hitung: false, aktif: true, urutan: 99 };
+    store.upsert('Kategori', kat);
+    db.Kategori = store.all('Kategori');
+    return kat;
+  }
+  function clone(o) { var c = {}; Object.keys(o).forEach(function (k) { c[k] = o[k]; }); return c; }
+  function softDelete(store, t, nowIso) { var d = clone(t); d.dihapus = nowIso; d.diubah = nowIso; store.upsert('Transaksi', d); }
 
   // ---------- API handler (dipakai server & mode demo) ----------
   // store: { all(table) -> array, upsert(table, obj) -> obj }
@@ -202,7 +249,8 @@ var KantongCore = (function () {
           version: VERSION, user: user, today: today,
           buku: sortBy(db.Buku, 'urutan'), users: db.Users,
           kategori: sortBy(db.Kategori, 'urutan'), kantong: sortBy(db.Kantong, 'urutan'),
-          saldo: computeSaldo(db).saldo, bulan: Object.keys(months).sort().reverse()
+          saldo: computeSaldo(db).saldo, bulan: Object.keys(months).sort().reverse(),
+          utang: computeUtang(db)
         };
       }
       case 'month': {
@@ -218,7 +266,20 @@ var KantongCore = (function () {
         var ex = byId(db.Transaksi)[payload.id];
         if (ex && ex.dihapus) throw err('Transaksi sudah dihapus');
         if (ex && !canWrite(db, user, ex.buku)) throw err('Kamu hanya bisa melihat transaksi ini');
+        if (ex && ex.sumber === 'auto') throw err('Catatan otomatis. Ubah lewat transaksi reimburse aslinya.');
         var t = cleanTx(payload, db, user, ex);
+        // jika transaksi reimburse yang sudah terbayar diubah, catatan pemasukan otomatisnya ikut
+        var linked = ex && ex.tx_balik ? byId(db.Transaksi)[ex.tx_balik] : null;
+        if (linked && !linked.dihapus) {
+          if (!t.reimburse || t.tipe !== 'Pengeluaran') {
+            softDelete(store, linked, nowIso); t.terbayar = ''; t.tx_balik = '';
+          } else {
+            var lk = clone(linked);
+            lk.nominal = t.nominal; lk.buku = t.buku;
+            lk.keterangan = 'Reimburse: ' + (t.keterangan || 'pengeluaran'); lk.diubah = nowIso;
+            store.upsert('Transaksi', lk);
+          }
+        }
         t.oleh = ex ? ex.oleh : user.id;
         t.sumber = ex ? (ex.sumber || 'app') : 'app';
         t.dibuat = ex ? ex.dibuat : nowIso;
@@ -226,13 +287,42 @@ var KantongCore = (function () {
         store.upsert('Transaksi', t);
         return { tx: t };
       }
+      case 'tx.reimburse': {
+        var rx = byId(db.Transaksi)[payload.id];
+        if (!rx || rx.dihapus) throw err('Transaksi tidak ditemukan');
+        if (rx.tipe !== 'Pengeluaran' || !bool(rx.reimburse)) throw err('Transaksi ini bukan reimburse');
+        if (!canWrite(db, user, rx.buku)) throw err('Kamu hanya bisa melihat transaksi ini');
+        var rid = 'rb-' + rx.id, cur = byId(db.Transaksi)[rid];
+        var upd = clone(rx);
+        if (bool(payload.bayar)) {
+          var tujuan = byId(db.Kantong)[payload.kantong];
+          if (!tujuan) throw err('Pilih kantong tempat uang masuk');
+          if (!bool(tujuan.aktif)) throw err('Kantong "' + tujuan.nama + '" nonaktif');
+          if (!canWrite(db, user, tujuan.buku)) throw err('Kamu tidak bisa memakai kantong "' + tujuan.nama + '"');
+          var tgl = isDate(payload.tanggal) ? payload.tanggal : today;
+          ensureKategoriReimburse(store, db);
+          var masuk = { id: rid, tanggal: tgl, tipe: 'Pemasukan', nominal: rx.nominal, buku: rx.buku,
+            kategori: KAT_REIMBURSE, kantong: tujuan.id, kantong_tujuan: '',
+            keterangan: 'Reimburse: ' + (rx.keterangan || 'pengeluaran'), reimburse: false,
+            oleh: user.id, sumber: 'auto', dibuat: cur ? cur.dibuat : nowIso, diubah: nowIso, dihapus: '',
+            terbayar: '', tx_balik: '' };
+          store.upsert('Transaksi', masuk);
+          upd.terbayar = tgl; upd.tx_balik = rid;
+        } else {
+          if (cur && !cur.dihapus) softDelete(store, cur, nowIso);
+          upd.terbayar = ''; upd.tx_balik = '';
+        }
+        upd.diubah = nowIso;
+        store.upsert('Transaksi', upd);
+        return { tx: upd };
+      }
       case 'tx.delete': {
         var d = byId(db.Transaksi)[payload.id];
         if (!d || d.dihapus) return { id: payload.id };        // idempoten
         if (!canWrite(db, user, d.buku)) throw err('Kamu hanya bisa melihat transaksi ini');
-        var del = {}; Object.keys(d).forEach(function (k) { del[k] = d[k]; });
-        del.dihapus = nowIso; del.diubah = nowIso;
-        store.upsert('Transaksi', del);
+        if (d.sumber === 'auto') throw err('Catatan otomatis. Batalkan lewat transaksi reimburse aslinya.');
+        if (d.tx_balik) { var dl = byId(db.Transaksi)[d.tx_balik]; if (dl && !dl.dihapus) softDelete(store, dl, nowIso); }
+        softDelete(store, d, nowIso);
         return { id: d.id };
       }
       case 'kategori.save': {
@@ -337,7 +427,8 @@ var KantongCore = (function () {
     canWrite: canWrite, writableBuku: writableBuku, computeSaldo: computeSaldo,
     effectiveBudget: effectiveBudget, summarize: summarize, txInBuku: txInBuku,
     bukuOfKantong: bukuOfKantong, scopeOf: scopeOf, bool: bool, num: num, byId: byId,
-    addDays: addDays, slug: slug, handle: handle, memoryStore: memoryStore, cleanTx: cleanTx
+    addDays: addDays, slug: slug, handle: handle, memoryStore: memoryStore, cleanTx: cleanTx,
+    computeUtang: computeUtang, KAT_REIMBURSE: KAT_REIMBURSE
   };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = KantongCore;

@@ -292,3 +292,45 @@ textarea.input { padding: 12px 14px; min-height: 90px; resize: vertical; }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 @media (min-width: 520px) { .view { padding-top: 32px; } }
+
+/* ---------- v3: pemilih kategori, reimburse, utang ---------- */
+.katbtn { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 52px; padding: 0 14px; text-align: left;
+  background: var(--surface-2); border: 2px solid transparent; border-radius: var(--r-field); font-weight: 700; }
+.katbtn:active { border-color: var(--accent); }
+.katbtn .dot { width: 12px; height: 12px; border-radius: 4px; flex: none; }
+.katbtn .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.katbtn .ph { flex: 1; color: var(--text-3); font-weight: 600; }
+.katbtn .auto { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); }
+.katbtn svg { width: 18px; height: 18px; color: var(--text-3); flex: none; }
+.kp-h { font-size: 13px; font-weight: 800; color: var(--text-2); margin: 18px 4px 8px; }
+.kp-list { max-height: 46dvh; overflow-y: auto; }
+.kp-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 4px; text-align: left; border-bottom: 1px dashed var(--line); font-weight: 700; }
+.kp-row:last-child { border-bottom: 0; }
+.kp-row .dot { width: 12px; height: 12px; border-radius: 4px; background: var(--c); flex: none; }
+.kp-row .name { flex: 1; }
+.kp-row .chk { color: var(--in); font-weight: 900; }
+
+.tag.wait { background: #FFE29A; color: var(--ink); }
+.tag.paid { background: #B8E6CF; color: var(--ink); }
+.tx .amt.dim { opacity: .45; text-decoration: line-through; }
+.paychk { flex: none; width: 24px; height: 24px; border-radius: 8px; border: 2px solid var(--surface-3); display: grid; place-items: center; margin-left: 4px; background: var(--surface); }
+.paychk[aria-checked="true"] { background: var(--in); border-color: var(--in); }
+.paychk[aria-checked="true"]::after { content: '✓'; color: #fff; font-weight: 900; font-size: 14px; line-height: 1; }
+
+.reim-box { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 14px; border-radius: var(--r-field); }
+.reim-box.wait { background: color-mix(in srgb, #FFE29A 55%, var(--surface)); }
+.reim-box.paid { background: color-mix(in srgb, #B8E6CF 55%, var(--surface)); }
+.reim-box .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.reim-box .main span { font-size: 12px; color: var(--text-2); font-weight: 600; }
+.reim-sum { padding: 4px 4px 0; }
+.reim-sum .t1 { font-weight: 800; font-size: 16px; }
+.reim-sum .big { font-size: 26px; font-weight: 900; }
+.hint { font-size: 12.5px; color: var(--text-2); font-weight: 600; margin: 12px 4px 0; line-height: 1.5; }
+.hint:empty { display: none; }
+
+.card.utang { padding-bottom: 8px; }
+.utang-row { display: flex; align-items: center; gap: 10px; padding: 12px 0; border-top: 1px dashed var(--line); flex-wrap: wrap; }
+.utang-row .main { flex: 1 1 160px; min-width: 0; }
+.utang-row .t1 { font-weight: 800; }
+.utang-row .t2 { font-size: 12px; color: var(--text-3); font-weight: 600; }
+.utang-row .amt { font-weight: 900; }
